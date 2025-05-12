@@ -16,6 +16,7 @@ services:
     depends_on:
       - balance-db
       - rabbitmq
+      - axonserver 
     restart: unless-stopped
 
   balance-db:
@@ -33,8 +34,8 @@ services:
 
   user-service:
     build:
-      context: ../user-service  # Указывает на корень проекта, где находится директория user-service
-      dockerfile: Dockerfile  # Путь к Dockerfile в директории user-service
+      context: ../user-service 
+      dockerfile: Dockerfile 
     container_name: user-service-lab5
     environment:
       SPRING_DATA_REDIS_HOST: 'user-keydb'
@@ -49,6 +50,7 @@ services:
       - user-keydb
       - user-db
       - rabbitmq
+      - axonserver  
     restart: unless-stopped
 
   user-db:
@@ -77,8 +79,8 @@ services:
 
   notification-service:
     build:
-      context: ../notification-service  # Указывает на корень проекта, где находится директория user-service
-      dockerfile: Dockerfile  # Путь к Dockerfile в директории user-service
+      context: ../notification-service  
+      dockerfile: Dockerfile 
     container_name: notification-service-lab5
     networks:
       - shared-net
@@ -92,8 +94,8 @@ services:
     image: axoniq/axonserver
     container_name: axonserver-lab5
     ports:
-      - "8024:8024"   # HTTP UI (dashboard, queries)
-      - "8124:8124"   # gRPC (для приложений)
+      - "8024:8024"   
+      - "8124:8124"   
     volumes:
       - ./axon-data:/axonserver/data
       - ./axon-events:/axonserver/events
@@ -105,6 +107,8 @@ services:
     restart: unless-stopped
     networks:
       - shared-net
+    healthcheck:
+      disable: true
 
   rabbitmq:
     image: "rabbitmq:3-management"
@@ -114,71 +118,19 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
-      - "15692:15692"  # По этому порту Prometheus может получить метрики
+      - "15692:15692" 
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
-      RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: "-rabbitmq_prometheus true" # Включает плагин для отдачи метрик
+      RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: "-rabbitmq_prometheus true" 
     volumes:
       - ./rabbitmq-data:/var/lib/rabbitmq
-    restart: unless-stopped
-
-  # Сервис Prometheus
-  prometheus:
-    image: prom/prometheus:v2.44.0
-    container_name: prometheus-archapp-lab5
-    networks:
-      - shared-net
-    ports:
-      - "9090:9090"   # Prometheus web UI
-    volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml  # Конфигурационный файл
-      - ./alert_rules.yml:/etc/prometheus/alert_rules.yml  # Файл с алертами
-    restart: unless-stopped
-
-  # Сервис Grafana
-  grafana:
-    image: grafana/grafana
-    container_name: grafana-lab5
-    networks:
-      - shared-net
-    ports:
-      - "3000:3000"   # Grafana web UI
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin  # Пароль администратора
-    volumes:
-      - grafana-data:/var/lib/grafana
-    depends_on:
-      - prometheus  # Дожидается прометея
-    restart: unless-stopped
-
-  # Сервис Alertmanager
-  alertmanager:
-    image: prom/alertmanager:v0.24.0
-    container_name: alertmanager-lab5
-    networks:
-      - shared-net
-    ports:
-      - "9093:9093"   # Alertmanager web UI
-    volumes:
-      - ./alertmanager.yml:/etc/alertmanager/alertmanager.yml  # Конфигурационный файл
-    restart: unless-stopped
-
-  # Тестовый SMTP сервер
-  mailpit:
-    image: axllent/mailpit
-    container_name: mailpit-lab5
-    networks:
-      - shared-net
-    ports:
-      - "1025:1025"  # SMTP
-      - "8025:8025"  # Web UI
     restart: unless-stopped
 
 volumes:
   grafana-data:
 
 networks:
-  user-net: # сеть для user-service и его БД + keyDb
-  balance-net: # сеть для balance-service и его БД
-  shared-net: # общая сеть для сервисов, rabbitmq, prometheus и т.д.
+  user-net: 
+  balance-net: 
+  shared-net: 
